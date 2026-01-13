@@ -1,34 +1,32 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { ReactFlowProvider } from '@xyflow/react'
+import '@xyflow/react/dist/style.css'
+import { FlowCanvas } from './components/FlowCanvas'
+import { Header } from './components/Header'
+import { Breadcrumbs } from './components/Breadcrumbs'
+import { PayloadInspector } from './components/PayloadInspector'
+import { ControlPanel } from './components/ControlPanel'
+import { SequenceDiagram } from './components/SequenceDiagram'
+import { useFlowStore } from './store/flowStore'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const { showSequenceDiagram } = useFlowStore()
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <ReactFlowProvider>
+      <div className="min-h-screen bg-lattice-darker flex flex-col">
+        <Header />
+        <div className="flex-1 flex flex-col">
+          <Breadcrumbs />
+          <div className="flex-1 flex relative">
+            <div className="flex-1 relative">
+              {showSequenceDiagram ? <SequenceDiagram /> : <FlowCanvas />}
+            </div>
+            <PayloadInspector />
+          </div>
+          <ControlPanel />
+        </div>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    </ReactFlowProvider>
   )
 }
 
