@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { ReactFlowProvider } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { FlowCanvas } from './components/FlowCanvas'
@@ -9,7 +10,18 @@ import { SequenceDiagram } from './components/SequenceDiagram'
 import { useFlowStore } from './store/flowStore'
 
 function App() {
-  const { showSequenceDiagram } = useFlowStore()
+  const { showSequenceDiagram, isPlaying, playbackSpeed, advanceStep } = useFlowStore()
+
+  // Animation controller - runs regardless of which view is shown
+  useEffect(() => {
+    if (!isPlaying) return
+
+    const interval = setInterval(() => {
+      advanceStep()
+    }, 1500 / playbackSpeed)
+
+    return () => clearInterval(interval)
+  }, [isPlaying, playbackSpeed, advanceStep])
 
   return (
     <ReactFlowProvider>

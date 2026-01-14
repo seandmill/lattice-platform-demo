@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { Handle, Position } from '@xyflow/react'
-import { ChevronRight, Database, Server, Cpu, Globe, Settings, Layers } from 'lucide-react'
+import { ChevronRight, Database, Server, Cpu, Globe, Settings, Layers, Plug } from 'lucide-react'
 import type { ComponentType, FlowStatus } from '../../types'
 
 interface LatticeNodeProps {
@@ -24,7 +24,7 @@ const componentIcons: Record<ComponentType, typeof Server> = {
   model: Cpu,
   service: Server,
   database: Database,
-  external: Globe,
+  external: Plug,
 }
 
 const componentColors: Record<ComponentType, { bg: string; border: string; text: string; glow: string }> = {
@@ -77,10 +77,10 @@ const componentColors: Record<ComponentType, { bg: string; border: string; text:
     glow: 'shadow-amber-500/50'
   },
   external: {
-    bg: 'bg-gray-900',
-    border: 'border-gray-400/60',
-    text: 'text-gray-300',
-    glow: 'shadow-gray-500/50'
+    bg: 'bg-violet-950',
+    border: 'border-violet-400/60',
+    text: 'text-violet-300',
+    glow: 'shadow-violet-500/50'
   },
 }
 

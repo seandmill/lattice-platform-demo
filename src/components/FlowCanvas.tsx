@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import {
   ReactFlow,
   Background,
@@ -6,6 +6,7 @@ import {
   MiniMap,
   useNodesState,
   useEdgesState,
+  useReactFlow,
   BackgroundVariant,
 } from '@xyflow/react'
 import { useFlowStore } from '../store/flowStore'
@@ -19,7 +20,9 @@ const nodeTypes = {
 }
 
 export function FlowCanvas() {
-  const { nodes: storeNodes, edges: storeEdges, drillDown, selectNode, isPlaying, playbackSpeed, advanceStep } = useFlowStore()
+  const { nodes: storeNodes, edges: storeEdges, drillDown, selectNode, currentLevel } = useFlowStore()
+  const { fitView } = useReactFlow()
+  const prevLevelRef = useRef(currentLevel)
 
   const [nodes, setNodes, onNodesChange] = useNodesState<LatticeNode>(storeNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState<LatticeEdge>(storeEdges)
@@ -29,15 +32,16 @@ export function FlowCanvas() {
     setEdges(storeEdges)
   }, [storeNodes, storeEdges, setNodes, setEdges])
 
+  // Auto fit-view when navigating between diagrams
   useEffect(() => {
-    if (!isPlaying) return
-
-    const interval = setInterval(() => {
-      advanceStep()
-    }, 1500 / playbackSpeed)
-
-    return () => clearInterval(interval)
-  }, [isPlaying, playbackSpeed, advanceStep])
+    if (prevLevelRef.current !== currentLevel) {
+      prevLevelRef.current = currentLevel
+      // Small delay to let the nodes render first
+      setTimeout(() => {
+        fitView({ padding: 0.2, duration: 300 })
+      }, 50)
+    }
+  }, [currentLevel, fitView])
 
   const onNodeClick = useCallback((_: React.MouseEvent, node: any) => {
     selectNode(node.id)
@@ -99,6 +103,7 @@ export function FlowCanvas() {
               case 'model': return '#8b5cf6'
               case 'database': return '#f59e0b'
               case 'service': return '#60a5fa'
+              case 'external': return '#8b5cf6'
               default: return '#475569'
             }
           }}

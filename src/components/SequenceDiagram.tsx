@@ -3,7 +3,7 @@ import { ArrowRight, ArrowLeft, Zap } from 'lucide-react'
 import { useFlowStore } from '../store/flowStore'
 
 export function SequenceDiagram() {
-  const { sequenceSteps, currentStepIndex, nodes } = useFlowStore()
+  const { sequenceSteps, currentStepIndex, nodes, setInspectorPayload } = useFlowStore()
   const containerRef = useRef<HTMLDivElement>(null)
   const activeStepRef = useRef<HTMLDivElement>(null)
 
@@ -20,6 +20,12 @@ export function SequenceDiagram() {
       activeStepRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
   }, [currentStepIndex])
+
+  const handleStepClick = (step: typeof sequenceSteps[0]) => {
+    if (step.payload) {
+      setInspectorPayload(step.payload)
+    }
+  }
 
   return (
     <div ref={containerRef} className="w-full h-full bg-slate-900 overflow-auto p-6">
@@ -55,7 +61,7 @@ export function SequenceDiagram() {
           </div>
 
           {/* Messages */}
-          <div className="relative space-y-2 py-4">
+          <div className="relative space-y-1 py-4">
             {sequenceSteps.map((step, idx) => {
               const fromIdx = participants.indexOf(step.from)
               const toIdx = participants.indexOf(step.to)
@@ -69,65 +75,78 @@ export function SequenceDiagram() {
                 <div
                   key={step.id}
                   ref={isActive ? activeStepRef : null}
-                  className={`relative flex items-center py-2 transition-all duration-300 ${isActive ? 'bg-blue-500/10' : isComplete ? 'opacity-75' : 'opacity-40'
-                    }`}
+                  onClick={() => handleStepClick(step)}
+                  className={`relative flex items-center h-12 transition-all duration-300 cursor-pointer hover:bg-slate-800/50 ${
+                    isActive ? 'bg-blue-500/20' : ''
+                  }`}
                 >
                   {/* Step number */}
-                  <div className="absolute left-0 w-8 text-xs text-slate-500 text-right pr-2">
+                  <div className={`absolute left-2 w-6 text-xs text-right ${
+                    isActive ? 'text-blue-400 font-bold' : isComplete ? 'text-green-400' : 'text-slate-500'
+                  }`}>
                     {idx + 1}
                   </div>
 
-                  {/* Arrow container */}
+                  {/* Label - positioned above the arrow */}
                   <div
-                    className="flex items-center"
-                    style={{
-                      marginLeft: `calc(${(startCol / participants.length) * 100}% + ${150 * startCol / participants.length}px + 75px)`,
-                      width: `calc(${(span / participants.length) * 100}% - 20px)`,
-                    }}
-                  >
-                    <div className={`flex items-center w-full ${isLeftToRight ? '' : 'flex-row-reverse'}`}>
-                      {/* Arrow line */}
-                      <div className={`flex-1 h-px relative ${step.isAsync ? 'border-t border-dashed' : ''
-                        } ${isActive ? 'bg-blue-400 border-blue-400' :
-                          isComplete ? 'bg-green-500 border-green-500' :
-                            'bg-slate-500 border-slate-500'
-                        }`}>
-                        {!step.isAsync && (
-                          <div className={`absolute inset-0 ${isActive ? 'bg-blue-400' : isComplete ? 'bg-green-500' : 'bg-slate-500'
-                            }`} />
-                        )}
-                      </div>
-
-                      {/* Arrow head */}
-                      {isLeftToRight ? (
-                        <ArrowRight className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-blue-400' : isComplete ? 'text-green-500' : 'text-slate-500'
-                          }`} />
-                      ) : (
-                        <ArrowLeft className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-blue-400' : isComplete ? 'text-green-500' : 'text-slate-500'
-                          }`} />
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Label */}
-                  <div
-                    className="absolute text-xs px-2 py-1 rounded bg-slate-800 border whitespace-nowrap"
+                    className={`absolute text-xs px-2 py-0.5 rounded whitespace-nowrap z-10 ${
+                      isActive ? 'bg-blue-900/80 border border-blue-500 text-blue-200' : 
+                      isComplete ? 'bg-slate-800 border border-green-600 text-green-300' : 
+                      'bg-slate-800 border border-slate-600 text-slate-300'
+                    }`}
                     style={{
                       left: `calc(${((startCol + span / 2) / participants.length) * 100}% + 75px)`,
-                      transform: 'translateX(-50%) translateY(-100%)',
-                      top: '50%',
-                      borderColor: isActive ? '#3b82f6' : isComplete ? '#22c55e' : '#475569',
+                      transform: 'translateX(-50%)',
+                      top: '2px',
                     }}
                   >
-                    <span className={isActive ? 'text-blue-300' : isComplete ? 'text-green-300' : 'text-slate-400'}>
-                      {step.label}
-                    </span>
+                    <span>{step.label}</span>
                     {step.isAsync && (
                       <Zap className="w-3 h-3 inline-block ml-1 text-amber-400" />
                     )}
                     {step.isReturn && (
-                      <span className="ml-1 text-slate-500">(return)</span>
+                      <span className="ml-1 text-slate-400 text-[10px]">(return)</span>
                     )}
+                  </div>
+
+                  {/* Arrow container */}
+                  <div
+                    className="absolute flex items-center"
+                    style={{
+                      left: `calc(${(startCol / participants.length) * 100}% + 75px)`,
+                      width: `calc(${(span / participants.length) * 100}%)`,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      paddingLeft: '10px',
+                      paddingRight: '10px',
+                    }}
+                  >
+                    <div className={`flex items-center w-full ${isLeftToRight ? '' : 'flex-row-reverse'}`}>
+                      {/* Start dot */}
+                      <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                        isActive ? 'bg-blue-400' : isComplete ? 'bg-green-500' : 'bg-slate-500'
+                      }`} />
+                      
+                      {/* Arrow line */}
+                      <div className={`flex-1 h-0.5 relative ${
+                        step.isAsync ? 'border-t-2 border-dashed bg-transparent' : ''
+                      } ${
+                        isActive ? 'bg-blue-400 border-blue-400' :
+                        isComplete ? 'bg-green-500 border-green-500' :
+                        'bg-slate-500 border-slate-500'
+                      }`} />
+
+                      {/* Arrow head */}
+                      {isLeftToRight ? (
+                        <ArrowRight className={`w-4 h-4 flex-shrink-0 ${
+                          isActive ? 'text-blue-400' : isComplete ? 'text-green-500' : 'text-slate-500'
+                        }`} />
+                      ) : (
+                        <ArrowLeft className={`w-4 h-4 flex-shrink-0 ${
+                          isActive ? 'text-blue-400' : isComplete ? 'text-green-500' : 'text-slate-500'
+                        }`} />
+                      )}
+                    </div>
                   </div>
                 </div>
               )

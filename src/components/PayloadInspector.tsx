@@ -1,11 +1,37 @@
-import { JSX, useState } from 'react'
-import { ChevronRight, ChevronDown, X, ArrowUpRight, ArrowDownLeft, Clock, Copy, Check } from 'lucide-react'
+import { JSX, useState, useRef, useCallback } from 'react'
+import { ChevronRight, ChevronDown, X, ArrowUpRight, ArrowDownLeft, Clock, Copy, Check, GripVertical } from 'lucide-react'
 import { useFlowStore } from '../store/flowStore'
 
 export function PayloadInspector() {
   const { inspectorPayload, setInspectorPayload, sequenceSteps, currentStepIndex } = useFlowStore()
-  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set(['body', 'headers']))
+  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set(['body', 'headers', 'workflow', 'tool']))
   const [copied, setCopied] = useState(false)
+  const [width, setWidth] = useState(400)
+  const isResizing = useRef(false)
+  const startX = useRef(0)
+  const startWidth = useRef(0)
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    isResizing.current = true
+    startX.current = e.clientX
+    startWidth.current = width
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+    e.preventDefault()
+  }, [width])
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isResizing.current) return
+    const delta = startX.current - e.clientX
+    const newWidth = Math.min(Math.max(startWidth.current + delta, 320), 800)
+    setWidth(newWidth)
+  }, [])
+
+  const handleMouseUp = useCallback(() => {
+    isResizing.current = false
+    document.removeEventListener('mousemove', handleMouseMove)
+    document.removeEventListener('mouseup', handleMouseUp)
+  }, [handleMouseMove])
 
   const currentStep = sequenceSteps[currentStepIndex]
   const payload = inspectorPayload || currentStep?.payload
@@ -96,9 +122,23 @@ export function PayloadInspector() {
 
   if (!payload && !currentStep) {
     return (
-      <div className="w-80 bg-slate-900 border-l border-slate-700 flex flex-col">
-        <div className="p-4 border-b border-slate-700">
+      <div style={{ width }} className="bg-slate-900 border-l border-slate-700 flex flex-col relative">
+        {/* Resize handle */}
+        <div
+          onMouseDown={handleMouseDown}
+          className="absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-blue-500/50 transition-colors group flex items-center"
+        >
+          <GripVertical className="w-3 h-3 text-slate-600 group-hover:text-blue-400 absolute -left-1" />
+        </div>
+        <div className="p-4 border-b border-slate-700 flex items-center justify-between">
           <h3 className="text-sm font-semibold text-white">Payload Inspector</h3>
+          <button
+            onClick={copyToClipboard}
+            className="p-1.5 rounded hover:bg-slate-700 transition-colors opacity-50"
+            disabled
+          >
+            <Copy className="w-4 h-4 text-slate-400" />
+          </button>
         </div>
         <div className="flex-1 flex items-center justify-center p-4">
           <p className="text-sm text-slate-500 text-center">
@@ -110,7 +150,14 @@ export function PayloadInspector() {
   }
 
   return (
-    <div className="w-80 bg-slate-900 border-l border-slate-700 flex flex-col">
+    <div style={{ width }} className="bg-slate-900 border-l border-slate-700 flex flex-col relative">
+      {/* Resize handle */}
+      <div
+        onMouseDown={handleMouseDown}
+        className="absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-blue-500/50 transition-colors group flex items-center"
+      >
+        <GripVertical className="w-3 h-3 text-slate-600 group-hover:text-blue-400 absolute -left-1" />
+      </div>
       <div className="p-4 border-b border-slate-700 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-white">Payload Inspector</h3>
         <div className="flex items-center gap-2">

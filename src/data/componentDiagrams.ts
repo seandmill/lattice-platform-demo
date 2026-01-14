@@ -20,7 +20,7 @@ export const aiGatewayNodes: LatticeNode[] = [
   { id: 'audit_writer', position: { x: 170, y: 230 }, parentId: 'gw_group', extent: 'parent', data: { label: 'Audit Writer', componentType: 'service', status: 'idle', canDrillDown: false, isAsync: true } },
   { id: 'platform_group', type: 'group', position: { x: 0, y: 440 }, style: { width: 700, height: 100, backgroundColor: 'rgba(156, 163, 175, 0.1)', borderRadius: 8 }, data: { label: 'Platform Services', componentType: 'control', status: 'idle', canDrillDown: false } },
   { id: 'policy_engine_svc', position: { x: 20, y: 40 }, parentId: 'platform_group', extent: 'parent', data: { label: 'Policy Engine', componentType: 'control', status: 'idle', canDrillDown: false } },
-  { id: 'workflow_registry_svc', position: { x: 170, y: 40 }, parentId: 'platform_group', extent: 'parent', data: { label: 'Workflow Registry', componentType: 'control', status: 'idle', canDrillDown: false } },
+  { id: 'workflow_registry_svc', position: { x: 170, y: 40 }, parentId: 'platform_group', extent: 'parent', data: { label: 'Workflow Registry', componentType: 'control', status: 'idle', canDrillDown: false, payload: samplePayloads.workflowRegistryEntry } },
   { id: 'orch_engine_svc', position: { x: 320, y: 40 }, parentId: 'platform_group', extent: 'parent', data: { label: 'Orchestration Engine', componentType: 'runtime', status: 'idle', canDrillDown: true, drillDownTarget: 'orchestration_component' } },
   { id: 'session_store_svc', position: { x: 480, y: 40 }, parentId: 'platform_group', extent: 'parent', data: { label: 'Session Store', componentType: 'database', status: 'idle', canDrillDown: false } },
 ]
@@ -52,7 +52,7 @@ export const aiGatewaySequence: SequenceStep[] = [
   { id: 'gw6', from: 'policy_adapter', to: 'policy_engine_svc', label: 'Evaluate policy' },
   { id: 'gw7', from: 'policy_engine_svc', to: 'policy_adapter', label: 'Policy decision', isReturn: true, payload: samplePayloads.policyResponse },
   { id: 'gw8', from: 'api_surface', to: 'workflow_router', label: 'Route request' },
-  { id: 'gw9', from: 'workflow_router', to: 'workflow_registry_svc', label: 'Resolve workflow' },
+  { id: 'gw9', from: 'workflow_router', to: 'workflow_registry_svc', label: 'Resolve workflow', payload: samplePayloads.workflowRegistryEntry },
   { id: 'gw10', from: 'workflow_router', to: 'orch_engine_svc', label: 'Start orchestration' },
   { id: 'gw11', from: 'orch_engine_svc', to: 'workflow_router', label: 'Result', isReturn: true },
   { id: 'gw12', from: 'api_surface', to: 'response_normalizer', label: 'Normalize response' },
@@ -102,8 +102,8 @@ export const orchestrationSequence: SequenceStep[] = [
   { id: 'orch7', from: 'orch_context_builder', to: 'agent_runtime', label: 'Context package', isReturn: true, payload: samplePayloads.contextPackage },
   { id: 'orch8', from: 'workflow_executor', to: 'prompt_manager', label: 'Resolve prompt' },
   { id: 'orch9', from: 'workflow_executor', to: 'tool_dispatcher', label: 'Dispatch tool call' },
-  { id: 'orch10', from: 'tool_dispatcher', to: 'orch_tool_gateway', label: 'Execute tool' },
-  { id: 'orch11', from: 'orch_tool_gateway', to: 'tool_dispatcher', label: 'Tool result', isReturn: true },
+  { id: 'orch10', from: 'tool_dispatcher', to: 'orch_tool_gateway', label: 'MCP tools/call', payload: samplePayloads.mcpToolCall },
+  { id: 'orch11', from: 'orch_tool_gateway', to: 'tool_dispatcher', label: 'MCP response', isReturn: true, payload: samplePayloads.mcpToolResponse },
   { id: 'orch12', from: 'workflow_executor', to: 'model_client', label: 'Generate response' },
   { id: 'orch13', from: 'model_client', to: 'orch_model_gateway', label: 'Inference' },
   { id: 'orch14', from: 'orch_model_gateway', to: 'model_client', label: 'Model output', isReturn: true, payload: samplePayloads.modelResponse },
@@ -159,35 +159,44 @@ export const contextBuilderSequence: SequenceStep[] = [
 
 // Tool Gateway Component
 export const toolGatewayNodes: LatticeNode[] = [
-  { id: 'tg_caller', position: { x: 250, y: 0 }, data: { label: 'Orchestration Engine', componentType: 'runtime', status: 'idle', canDrillDown: false } },
-  { id: 'tg_group', type: 'group', position: { x: 0, y: 80 }, style: { width: 550, height: 180, backgroundColor: 'rgba(34, 197, 94, 0.1)', borderRadius: 8 }, data: { label: 'Tool Gateway', componentType: 'runtime', status: 'idle', canDrillDown: false } },
-  { id: 'tool_router', position: { x: 200, y: 30 }, parentId: 'tg_group', extent: 'parent', data: { label: 'Tool Router', componentType: 'runtime', status: 'idle', canDrillDown: false } },
+  { id: 'tg_caller', position: { x: 300, y: 0 }, data: { label: 'Orchestration Engine', componentType: 'runtime', status: 'idle', canDrillDown: false } },
+  { id: 'tg_group', type: 'group', position: { x: 0, y: 80 }, style: { width: 700, height: 180, backgroundColor: 'rgba(34, 197, 94, 0.1)', borderRadius: 8 }, data: { label: 'Tool Gateway', componentType: 'runtime', status: 'idle', canDrillDown: false } },
+  { id: 'tool_router', position: { x: 280, y: 30 }, parentId: 'tg_group', extent: 'parent', data: { label: 'Tool Router', componentType: 'runtime', status: 'idle', canDrillDown: false } },
   { id: 'tool_auth', position: { x: 20, y: 100 }, parentId: 'tg_group', extent: 'parent', data: { label: 'Tool Auth + RBAC', componentType: 'runtime', status: 'idle', canDrillDown: false } },
-  { id: 'tool_executor', position: { x: 200, y: 100 }, parentId: 'tg_group', extent: 'parent', data: { label: 'Tool Executor', componentType: 'runtime', status: 'idle', canDrillDown: false } },
-  { id: 'tool_audit', position: { x: 380, y: 100 }, parentId: 'tg_group', extent: 'parent', data: { label: 'Tool Audit Logger', componentType: 'service', status: 'idle', canDrillDown: false } },
-  { id: 'tg_tool_registry', position: { x: 0, y: 300 }, data: { label: 'Tool Registry', componentType: 'control', status: 'idle', canDrillDown: false } },
-  { id: 'tg_sor', position: { x: 180, y: 300 }, data: { label: 'Systems of Record', componentType: 'database', status: 'idle', canDrillDown: false } },
-  { id: 'tg_docs', position: { x: 360, y: 300 }, data: { label: 'Document Store', componentType: 'database', status: 'idle', canDrillDown: false } },
+  { id: 'mcp_client', position: { x: 200, y: 100 }, parentId: 'tg_group', extent: 'parent', data: { label: 'MCP Client', componentType: 'runtime', status: 'idle', canDrillDown: false, description: 'JSON-RPC 2.0' } },
+  { id: 'tool_executor', position: { x: 380, y: 100 }, parentId: 'tg_group', extent: 'parent', data: { label: 'Tool Executor', componentType: 'runtime', status: 'idle', canDrillDown: false } },
+  { id: 'tool_audit', position: { x: 540, y: 100 }, parentId: 'tg_group', extent: 'parent', data: { label: 'Audit Logger', componentType: 'service', status: 'idle', canDrillDown: false } },
+  { id: 'tg_tool_registry', position: { x: 0, y: 300 }, data: { label: 'Tool Registry', componentType: 'control', status: 'idle', canDrillDown: false, payload: samplePayloads.toolRegistryEntry } },
+  // MCP Servers group
+  { id: 'mcp_servers_group', type: 'group', position: { x: 180, y: 290 }, style: { width: 520, height: 120, backgroundColor: 'rgba(139, 92, 246, 0.1)', borderRadius: 8 }, data: { label: 'Domain MCP Servers', componentType: 'external', status: 'idle', canDrillDown: false } },
+  { id: 'mcp_servicing', position: { x: 20, y: 50 }, parentId: 'mcp_servers_group', extent: 'parent', data: { label: 'Cases MCP', componentType: 'external', status: 'idle', canDrillDown: false, description: 'case_lookup' } },
+  { id: 'mcp_documents', position: { x: 180, y: 50 }, parentId: 'mcp_servers_group', extent: 'parent', data: { label: 'Documents MCP', componentType: 'external', status: 'idle', canDrillDown: false, description: 'doc_search, doc_fetch' } },
+  { id: 'mcp_risk', position: { x: 340, y: 50 }, parentId: 'mcp_servers_group', extent: 'parent', data: { label: 'Analytics MCP', componentType: 'external', status: 'idle', canDrillDown: false, description: 'scoring, calc' } },
 ]
 
 export const toolGatewayEdges: LatticeEdge[] = [
   { id: 'tg_caller-tool_router', source: 'tg_caller', target: 'tool_router', data: { status: 'idle' } },
   { id: 'tool_router-tool_auth', source: 'tool_router', target: 'tool_auth', data: { status: 'idle' } },
-  { id: 'tool_router-tool_executor', source: 'tool_router', target: 'tool_executor', data: { status: 'idle' } },
+  { id: 'tool_router-mcp_client', source: 'tool_router', target: 'mcp_client', data: { status: 'idle' } },
+  { id: 'mcp_client-tool_executor', source: 'mcp_client', target: 'tool_executor', data: { status: 'idle' } },
   { id: 'tool_executor-tool_audit', source: 'tool_executor', target: 'tool_audit', style: { strokeDasharray: '5,5' }, data: { status: 'idle', isAsync: true } },
   { id: 'tool_auth-tg_tool_registry', source: 'tool_auth', target: 'tg_tool_registry', data: { status: 'idle' } },
-  { id: 'tool_executor-tg_sor', source: 'tool_executor', target: 'tg_sor', data: { status: 'idle' } },
-  { id: 'tool_executor-tg_docs', source: 'tool_executor', target: 'tg_docs', data: { status: 'idle' } },
+  // MCP connections to domain servers
+  { id: 'mcp_client-mcp_servicing', source: 'mcp_client', target: 'mcp_servicing', data: { status: 'idle', label: 'tools/call' } },
+  { id: 'mcp_client-mcp_documents', source: 'mcp_client', target: 'mcp_documents', data: { status: 'idle', label: 'tools/call' } },
+  { id: 'mcp_client-mcp_risk', source: 'mcp_client', target: 'mcp_risk', data: { status: 'idle', label: 'tools/call' } },
 ]
 
 export const toolGatewaySequence: SequenceStep[] = [
   { id: 'tg1', from: 'tg_caller', to: 'tool_router', label: 'Tool call request' },
   { id: 'tg2', from: 'tool_router', to: 'tool_auth', label: 'Authorize tool access' },
-  { id: 'tg3', from: 'tool_auth', to: 'tg_tool_registry', label: 'Check permissions' },
-  { id: 'tg4', from: 'tool_router', to: 'tool_executor', label: 'Execute tool' },
-  { id: 'tg5', from: 'tool_executor', to: 'tg_sor', label: 'Query systems' },
-  { id: 'tg6', from: 'tool_executor', to: 'tool_audit', label: 'Log execution', isAsync: true },
-  { id: 'tg7', from: 'tool_executor', to: 'tg_caller', label: 'Tool result', isReturn: true },
+  { id: 'tg3', from: 'tool_auth', to: 'tg_tool_registry', label: 'Lookup tool + RBAC', payload: samplePayloads.toolRegistryEntry },
+  { id: 'tg4', from: 'tool_router', to: 'mcp_client', label: 'Route to MCP Client' },
+  { id: 'tg5', from: 'mcp_client', to: 'mcp_servicing', label: 'MCP tools/call', payload: samplePayloads.mcpToolCall },
+  { id: 'tg6', from: 'mcp_servicing', to: 'mcp_client', label: 'MCP response', isReturn: true, payload: samplePayloads.mcpToolResponse },
+  { id: 'tg7', from: 'mcp_client', to: 'tool_executor', label: 'Execute result' },
+  { id: 'tg8', from: 'tool_executor', to: 'tool_audit', label: 'Emit audit event', isAsync: true },
+  { id: 'tg9', from: 'tool_executor', to: 'tg_caller', label: 'Tool result', isReturn: true },
 ]
 
 // Model Gateway Component
